@@ -1,0 +1,19 @@
+{
+  "name": "installer-tool",
+  "version": "1.0.0",
+  "description": "A web-based tool for creating Windows installers using NSIS (Nullsoft Scriptable Install System). This tool provides a simple web interface where users can upload files and provide NSIS scripts to generate executable installers.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "mysql2": "^3.14.3",
+    "sqlite3": "^5.1.7"
+  }
+}
