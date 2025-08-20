@@ -464,22 +464,23 @@ async function loadScriptList() {
       return;
     }
 
-    // Create table
-    const table = document.createElement("table");
-    table.className = "script-table";
-    table.innerHTML = `
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Title</th>
-                <th>Installer</th>
-                <th>Files</th>
-                <th>Size</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          `;
+         // Create table
+     const table = document.createElement("table");
+     table.className = "script-table";
+     table.innerHTML = `
+             <thead>
+               <tr>
+                 <th>No.</th>
+                 <th>Title</th>
+                 <th>Installer</th>
+                 <th>Files</th>
+                 <th>Size</th>
+                 <th>Action</th>
+                 <th>Created</th>
+               </tr>
+             </thead>
+             <tbody></tbody>
+           `;
 
     const tbody = table.querySelector("tbody");
     scripts.forEach((s, index) => {
@@ -488,14 +489,18 @@ async function loadScriptList() {
       const fileCount = s.file_count || 0;
       const totalSize = s.total_size ? formatFileSize(s.total_size) : 'N/A';
       
-      row.innerHTML = `
-              <td>${index + 1}</td>
-              <td><span class="script-title" onclick="showScriptDetails(${s.id})">${s.title}</span></td>
-              <td><a href="${s.installer_path}" target="_blank" class="download-link">⬇️ ${s.title}.exe</a></td>
-              <td>${fileCount} file(s)</td>
-              <td>${totalSize}</td>
-              <td>${createdDate}</td>
-            `;
+             row.innerHTML = `
+               <td>${index + 1}</td>
+               <td><span class="script-title" onclick="showScriptDetails(${s.id})">${s.title}</span></td>
+               <td><a href="${s.installer_path}" target="_blank" class="download-link">⬇️ ${s.title}.exe</a></td>
+               <td>${fileCount} file(s)</td>
+               <td>${totalSize}</td>
+               <td>
+                 <button class="btn-small" onclick="editScript(${s.id})">✏️ Edit</button>
+                 <button class="btn-small" onclick="duplicateScript(${s.id})">📑 Duplicate</button>
+               </td>
+               <td>${createdDate}</td>
+             `;
       tbody.appendChild(row);
 
       // Add details div after the table
@@ -534,6 +539,17 @@ function closeScriptDetails(id) {
   if (detailsDiv) {
     detailsDiv.classList.remove("show");
   }
+}
+
+// Edit script function
+function editScript(id) {
+  window.location.href = `edit.html?id=${id}`;
+}
+
+// Duplicate script function
+function duplicateScript(id) {
+  // For now, just show a message
+  alert('Duplicate functionality coming soon!');
 }
 
 // Initialize the application

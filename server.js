@@ -273,6 +273,72 @@ app.get("/api/scripts", (req, res) => {
   });
 });
 
+// API: Get script by ID
+app.get("/api/scripts/:id", (req, res) => {
+  const id = req.params.id;
+  db.query("SELECT * FROM scripts WHERE id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (rows.length === 0) return res.status(404).json({ success: false, error: "Not found" });
+    res.json(rows[0]);
+  });
+});
+
+// API: Get files for a script ID
+app.get("/api/scripts/:id/files", (req, res) => {
+  const id = req.params.id;
+  
+  // First get the script to find the build directory
+  db.query("SELECT * FROM scripts WHERE id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (rows.length === 0) return res.status(404).json({ success: false, error: "Script not found" });
+    
+    const script = rows[0];
+    const installerPath = script.installer_path;
+    
+    // Extract the build directory from installer path
+    // Path format: /download/1755700480982/test_installer.exe
+    const pathParts = installerPath.split('/');
+    if (pathParts.length < 3) {
+      return res.status(400).json({ success: false, error: "Invalid installer path" });
+    }
+    
+    const buildDir = pathParts[2]; // 1755700480982
+    const buildPath = path.join(__dirname, 'builds', buildDir);
+    
+    // Check if build directory exists
+    if (!fs.existsSync(buildPath)) {
+      return res.json({ success: true, files: [], buildDir: buildDir });
+    }
+    
+    try {
+      const files = [];
+      const items = fs.readdirSync(buildPath);
+      
+      items.forEach(item => {
+        const itemPath = path.join(buildPath, item);
+        const stats = fs.statSync(itemPath);
+        
+        files.push({
+          name: item,
+          size: stats.size,
+          isDirectory: stats.isDirectory(),
+          path: `/download/${buildDir}/${item}`,
+          modified: stats.mtime
+        });
+      });
+      
+      res.json({ 
+        success: true, 
+        files: files,
+        buildDir: buildDir,
+        totalFiles: files.length
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
+
 // API: Get all registered routes (for debugging)
 app.get("/api/routes", (req, res) => {
   const routes = [];

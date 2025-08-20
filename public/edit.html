@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Edit Script - NSIS Installer Generator</title>
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="edit-page">
+    <div class="container">
+      <div class="header">
+        <h1>✏️ Edit Script</h1>
+        <p>Edit your NSIS installer script</p>
+      </div>
+
+      <div class="content">
+        <div class="back-link">
+          <a href="index.html" class="btn-secondary">← Back to Home</a>
+        </div>
+
+        <div id="loading" class="loading">
+          <p>Loading script...</p>
+        </div>
+
+        <div id="edit-form" style="display: none;">
+          <form id="form">
+            <div class="form-group">
+              <label for="title">Installer Title</label>
+              <input type="text" id="title" class="form-control" required>
+            </div>
+
+            <div class="script-preview">
+              <h3>📜 NSIS Script</h3>
+              <p class="script-note">💡 Edit your script here!</p>
+              <textarea id="script" class="form-control"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="generate-btn">
+                💾 Update Script
+              </button>
+              <button type="button" id="delete-btn" class="btn-danger">
+                🗑️ Delete Script
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="result"></div>
+
+        <div id="builds-section" style="display: none;">
+          <h3>📦 Build Files</h3>
+          <div id="builds-list"></div>
+        </div>
+      </div>
+    </div>
+    <script src="edit.js"></script>
+  </body>
+</html>
