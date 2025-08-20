@@ -273,6 +273,81 @@ app.get("/api/scripts", (req, res) => {
   });
 });
 
+// API: Get all registered routes (for debugging)
+app.get("/api/routes", (req, res) => {
+  const routes = [];
+  
+  // Method 1: Try to access the router stack
+  if (app._router && app._router.stack) {
+    app._router.stack
+      .filter(layer => layer.route)
+      .forEach(layer => {
+        const methods = Object.keys(layer.route.methods)
+          .map(m => m.toUpperCase());
+        routes.push({
+          path: layer.route.path,
+          methods: methods
+        });
+      });
+  }
+  
+  // Method 2: Try to access the app stack directly
+  if (app.stack) {
+    app.stack
+      .filter(layer => layer.route)
+      .forEach(layer => {
+        const methods = Object.keys(layer.route.methods)
+          .map(m => m.toUpperCase());
+        routes.push({
+          path: layer.route.path,
+          methods: methods
+        });
+      });
+  }
+  
+  // Method 3: Try to access the router through different paths
+  if (app._router && app._router.stack) {
+    app._router.stack.forEach(layer => {
+      if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+        layer.handle.stack
+          .filter(route => route.route)
+          .forEach(route => {
+            const methods = Object.keys(route.route.methods)
+              .map(m => m.toUpperCase());
+            routes.push({
+              path: layer.regexp ? layer.regexp.toString() : 'unknown',
+              methods: methods
+            });
+          });
+      }
+    });
+  }
+  
+  // Method 4: Manual route listing as fallback
+  if (routes.length === 0) {
+    routes.push(
+      { path: '/upload', methods: ['POST'] },
+      { path: '/api/scripts', methods: ['GET'] },
+      { path: '/api/routes', methods: ['GET'] },
+      { path: '/download/*', methods: ['GET'] },
+      { path: '/public/*', methods: ['GET'] },
+      { path: '/*', methods: ['GET'] }
+    );
+  }
+  
+  // Remove duplicates
+  const uniqueRoutes = routes.filter((route, index, self) => 
+    index === self.findIndex(r => r.path === route.path)
+  );
+  
+  res.json({
+    success: true,
+    routes: uniqueRoutes,
+    total: uniqueRoutes.length,
+    detectionMethod: routes.length === 0 ? 'manual' : 'automatic'
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
@@ -290,6 +365,56 @@ app.use((req, res) => {
   });
 });
 
-app.listen(port, () => {
+// Function to log all registered routes
+const logRoutes = () => {
+  console.log("=== Registered Routes ===");
+  
+  // Try multiple methods to detect routes
+  let routesFound = false;
+  
+  // Method 1: Try to access the router stack
+  if (app._router && app._router.stack) {
+    const routes = app._router.stack
+      .filter(layer => layer.route)
+      .map(layer => {
+        const methods = Object.keys(layer.route.methods)
+          .map(m => m.toUpperCase())
+          .join(", ");
+        return `${methods} ${layer.route.path}`;
+      });
+    
+    if (routes.length > 0) {
+      routes.forEach(route => console.log(route));
+      routesFound = true;
+    }
+  }
+  
+  // Method 2: Try to access the app stack directly
+  if (!routesFound && app.stack) {
+    const routes = app.stack
+      .filter(layer => layer.route)
+      .map(layer => {
+        const methods = Object.keys(layer.route.methods)
+          .map(m => m.toUpperCase())
+          .join(", ");
+        return `${methods} ${layer.route.path}`;
+      });
+    
+    if (routes.length > 0) {
+      routes.forEach(route => console.log(route));
+      routesFound = true;
+    }
+  }
+  
+  if (!routesFound) {
+    console.log("⚠️ No routes detected - Express routes may not be fully registered yet");
+  }
+};
+
+app.listen(port, '0.0.0.0', () => {
   console.log(`✅ Server running at http://localhost:${port}`);
+  console.log(`✅ Server also accessible at http://0.0.0.0:${port}`);
+  
+  // Log routes after a short delay to ensure they're registered
+  setTimeout(logRoutes, 100);
 });
