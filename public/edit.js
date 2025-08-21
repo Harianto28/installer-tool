@@ -546,11 +546,11 @@ async function createNewInstaller(originalId, data) {
     console.log('Sections:', sections);
     
     if (hasNewFiles) {
-      // We have new files, use the regular upload endpoint but include existing files
-      console.log('🔄 Using upload endpoint with mixed files (existing + new)...');
-      await createMixedInstaller(originalId, data);
+      // We have new files, use the enhanced edit-script endpoint with file uploads
+      console.log('🔄 Using enhanced edit-script endpoint with new files...');
+      await createEnhancedEditScriptInstaller(originalId, data);
     } else {
-      // No new files, use the edit-script endpoint to reuse existing files
+      // No new files, use the edit-script endpoint to reuse existing files only
       console.log('🔄 Using edit-script endpoint to reuse existing files...');
       await createEditScriptInstaller(originalId, data);
     }
@@ -558,6 +558,52 @@ async function createNewInstaller(originalId, data) {
   } catch (error) {
     console.error('Error creating new installer:', error);
     showResult('Error creating new installer: ' + error.message, 'error');
+  }
+}
+
+// Create installer using enhanced edit-script endpoint (existing files + new files)
+async function createEnhancedEditScriptInstaller(originalId, data) {
+  showResult('🔄 Creating new installer with existing files + new files...', 'info');
+  
+  // Create FormData for the enhanced endpoint
+  const formData = new FormData();
+  formData.append("title", data.title);
+  formData.append("script", data.script);
+  formData.append("sourceScriptId", originalId);
+  
+  // Add all new files from the sections
+  let newFileCount = 0;
+  sections.forEach(section => {
+    section.files.forEach(fileObj => {
+      if (fileObj.file) { // This is a new file
+        formData.append("files", fileObj.file);
+        newFileCount++;
+        console.log(`✅ Added new file to upload: ${fileObj.name}`);
+      }
+    });
+  });
+  
+  console.log(`📤 Uploading ${newFileCount} new files to enhanced edit-script endpoint...`);
+  
+  // Use the enhanced /edit-script endpoint that handles both existing and new files
+  const response = await fetch('/edit-script', {
+    method: 'POST',
+    body: formData
+  });
+  
+  console.log('Response status:', response.status);
+  console.log('Response headers:', response.headers);
+  
+  const json = await response.json();
+  console.log('Response JSON:', json);
+
+  if (response.ok) {
+    showResult(`✅ New installer created successfully! Redirecting to home page...`, 'success');
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 2000);
+  } else {
+    showResult(`❌ ${json.error || "Build failed."}`, 'error');
   }
 }
 
@@ -596,88 +642,6 @@ async function createEditScriptInstaller(originalId, data) {
     }, 2000);
   } else {
     showResult(`❌ ${json.error || "Build failed."}`, 'error');
-  }
-}
-
-// Create installer using upload endpoint (existing files + new files)
-async function createMixedInstaller(originalId, data) {
-  showResult('🔄 Creating new installer with existing files + new files...', 'info');
-  
-  try {
-    // First, get the existing files from the original script
-    const filesResponse = await fetch(`/api/scripts/${originalId}/files`);
-    const filesData = await filesResponse.json();
-    
-    if (!filesData.success || !filesData.files || filesData.files.length === 0) {
-      showResult('❌ No existing files found to copy.', 'error');
-      return;
-    }
-    
-    // Filter out build artifacts and only keep source files
-    const existingFiles = filesData.files.filter(file => {
-      if (file.isDirectory) return false;
-      const fileName = file.name.toLowerCase();
-      return !(fileName.endsWith('.exe') || fileName.endsWith('.nsi'));
-    });
-    
-    if (existingFiles.length === 0) {
-      showResult('❌ No source files found to copy.', 'error');
-      return;
-    }
-    
-    showResult(`📥 Preparing ${existingFiles.length} existing files + new files...`, 'info');
-    
-    // Create FormData for the new installer
-    const formData = new FormData();
-    formData.append("title", data.title);
-    formData.append("script", data.script);
-    
-    // Download each existing source file and add it to the form data
-    for (const fileInfo of existingFiles) {
-      try {
-        const fileResponse = await fetch(fileInfo.path);
-        if (!fileResponse.ok) {
-          console.warn(`Failed to download ${fileInfo.name}:`, fileResponse.statusText);
-          continue;
-        }
-        
-        const fileBlob = await fileResponse.blob();
-        const file = new File([fileBlob], fileInfo.name, { type: fileBlob.type });
-        formData.append("files", file);
-        console.log(`✅ Downloaded and prepared existing file: ${fileInfo.name}`);
-      } catch (error) {
-        console.error(`Error downloading ${fileInfo.name}:`, error);
-      }
-    }
-    
-    // Add all new files from the sections
-    sections.forEach(section => {
-      section.files.forEach(fileObj => {
-        if (fileObj.file) { // This is a new file
-          formData.append("files", fileObj.file);
-          console.log(`✅ Added new file: ${fileObj.name}`);
-        }
-      });
-    });
-    
-    showResult(`📤 Uploading new installer with ${existingFiles.length} existing files + new files...`, 'info');
-    
-    // Submit to create new installer using the regular upload endpoint
-    const res = await fetch("/upload", { method: "POST", body: formData });
-    const json = await res.json();
-
-    if (res.ok) {
-      showResult(`✅ New installer created successfully! Redirecting to home page...`, 'success');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 2000);
-    } else {
-      showResult(`❌ ${json.error || "Build failed."}`, 'error');
-    }
-    
-  } catch (error) {
-    console.error('Error in createMixedInstaller:', error);
-    showResult('Error creating mixed installer: ' + error.message, 'error');
   }
 }
 

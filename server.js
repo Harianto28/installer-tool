@@ -262,9 +262,10 @@ app.post("/upload", handleUpload, (req, res) => {
 });
 
 // New endpoint for editing scripts - reuse existing files from a previous build
-app.post("/edit-script", (req, res) => {
+app.post("/edit-script", handleUpload, (req, res) => {
   console.log('=== EDIT SCRIPT REQUEST RECEIVED ===');
   console.log('Body received:', req.body ? Object.keys(req.body) : 'No body');
+  console.log('Files received:', req.files ? req.files.length : 0);
   console.log('Full request body:', JSON.stringify(req.body, null, 2));
   
   try {
@@ -395,6 +396,25 @@ app.post("/edit-script", (req, res) => {
         }
       });
       
+      // Handle any new files uploaded by the user
+      if (req.files && req.files.length > 0) {
+        console.log(`📁 Processing ${req.files.length} new uploaded files...`);
+        
+        req.files.forEach((file) => {
+          const destPath = path.join(newFolder, file.originalname);
+          
+          try {
+            fs.renameSync(file.path, destPath);
+            const stats = fs.statSync(destPath);
+            totalSize += stats.size;
+            fileCount++;
+            console.log(`✅ Added new uploaded file: ${file.originalname} (${stats.size} bytes)`);
+          } catch (error) {
+            console.error(`❌ Failed to add uploaded file ${file.originalname}:`, error);
+          }
+        });
+      }
+      
       if (fileCount === 0) {
         console.log('❌ No source files found to copy');
         return res.status(400).json({
@@ -403,7 +423,7 @@ app.post("/edit-script", (req, res) => {
         });
       }
       
-      console.log(`✅ Copied ${fileCount} files, total size: ${totalSize} bytes`);
+      console.log(`✅ Total: ${fileCount} files, total size: ${totalSize} bytes`);
       
       // Write the new script
       const outFileMatch = normalizedScript.match(/OutFile\s+"([^"]+)"/i);
