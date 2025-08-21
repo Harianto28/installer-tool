@@ -581,6 +581,60 @@ app.get("/api/scripts/:id/files", (req, res) => {
   });
 });
 
+// API: Delete script by ID
+app.delete("/api/scripts/:id", (req, res) => {
+  const id = req.params.id;
+  
+  // First get the script to find the build directory
+  db.query("SELECT * FROM scripts WHERE id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (rows.length === 0) return res.status(404).json({ success: false, error: "Script not found" });
+    
+    const script = rows[0];
+    const installerPath = script.installer_path;
+    
+    // Extract the build directory from installer path
+    // Path format: /download/1755700480982/test_installer.exe
+    const pathParts = installerPath.split('/');
+    if (pathParts.length >= 3) {
+      const buildDir = pathParts[2]; // 1755700480982
+      const buildPath = path.join(__dirname, 'builds', buildDir);
+      
+      // Delete the build directory if it exists
+      if (fs.existsSync(buildPath)) {
+        try {
+          // Remove all files in the build directory
+          const items = fs.readdirSync(buildPath);
+          items.forEach(item => {
+            const itemPath = path.join(buildPath, item);
+            const stats = fs.statSync(itemPath);
+            if (stats.isDirectory()) {
+              fs.rmSync(itemPath, { recursive: true, force: true });
+            } else {
+              fs.unlinkSync(itemPath);
+            }
+          });
+          
+          // Remove the empty build directory
+          fs.rmdirSync(buildPath);
+          console.log(`✅ Build directory deleted: ${buildPath}`);
+        } catch (error) {
+          console.error(`❌ Error deleting build directory: ${error.message}`);
+          // Continue with script deletion even if build directory deletion fails
+        }
+      }
+    }
+    
+    // Delete the script from database
+    db.query("DELETE FROM scripts WHERE id = ?", [id], (err, result) => {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      
+      console.log(`✅ Script deleted from database: ID ${id}`);
+      res.json({ success: true, message: "Script deleted successfully" });
+    });
+  });
+});
+
 // API: Get all registered routes (for debugging)
 app.get("/api/routes", (req, res) => {
   // Since Express.js doesn't expose routes in a reliable way,
@@ -591,6 +645,7 @@ app.get("/api/routes", (req, res) => {
     { path: '/api/scripts', methods: ['GET'], description: 'List all scripts' },
     { path: '/api/scripts/:id', methods: ['GET'], description: 'Get script by ID' },
     { path: '/api/scripts/:id/files', methods: ['GET'], description: 'Get files for a specific script' },
+    { path: '/api/scripts/:id', methods: ['DELETE'], description: 'Delete script by ID' },
     { path: '/api/routes', methods: ['GET'], description: 'List all registered routes' },
     { path: '/download/*', methods: ['GET'], description: 'Static file serving for builds' },
     { path: '/public/*', methods: ['GET'], description: 'Static file serving for public assets' },
@@ -633,6 +688,7 @@ const logRoutes = () => {
     { path: '/api/scripts', methods: ['GET'], description: 'List all scripts' },
     { path: '/api/scripts/:id', methods: ['GET'], description: 'Get script by ID' },
     { path: '/api/scripts/:id/files', methods: ['GET'], description: 'Get files for a specific script' },
+    { path: '/api/scripts/:id', methods: ['DELETE'], description: 'Delete script by ID' },
     { path: '/api/routes', methods: ['GET'], description: 'List all registered routes' },
     { path: '/download/*', methods: ['GET'], description: 'Static file serving for builds' },
     { path: '/public/*', methods: ['GET'], description: 'Static file serving for public assets' },

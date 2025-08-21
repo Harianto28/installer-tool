@@ -60,10 +60,37 @@
 
         <div id="result"></div>
 
-                 <div class="script-history">
-           <h3>📜 Script History</h3>
-           <div id="scriptList"></div>
-         </div>
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>🗑️ Confirm Deletion</h3>
+              <span class="close" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+              <div class="delete-warning">
+                <p><strong>⚠️ Warning:</strong> This action cannot be undone!</p>
+                <p>You are about to delete the script: <strong id="deleteScriptTitle"></strong></p>
+              </div>
+              
+              <div class="build-info-section">
+                <h4>📁 Build Directory Information</h4>
+                <p><strong>Build ID:</strong> <span id="deleteBuildId"></span></p>
+                <p><strong>Files to be deleted:</strong></p>
+                <div id="deleteFileList" class="file-list-preview"></div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+              <button type="button" class="btn-danger" onclick="confirmDelete()">Delete Script</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="script-history">
+          <h3>📜 Script History</h3>
+          <div id="scriptList"></div>
+        </div>
       </div>
     </div>
     <script src="script.js"></script>

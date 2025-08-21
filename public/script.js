@@ -497,7 +497,7 @@ async function loadScriptList() {
                <td>${totalSize}</td>
                <td>
                  <button class="btn-small" onclick="editScript(${s.id})">✏️ Edit</button>
-                 <button class="btn-small" onclick="duplicateScript(${s.id})">📑 Duplicate</button>
+                 <button class="btn-small btn-danger" onclick="showDeleteModal(${s.id})">🗑️ Delete</button>
                </td>
                <td>${createdDate}</td>
              `;
@@ -546,10 +546,150 @@ function editScript(id) {
   window.location.href = `edit.html?id=${id}`;
 }
 
-// Duplicate script function
-function duplicateScript(id) {
-  // For now, just show a message
-  alert('Duplicate functionality coming soon!');
+// Global variables for delete modal
+let currentDeleteId = null;
+let currentDeleteScript = null;
+
+// Show delete confirmation modal
+async function showDeleteModal(id) {
+  try {
+    // Get script details
+    const res = await fetch(`/api/scripts/${id}`);
+    if (!res.ok) {
+      throw new Error('Failed to fetch script details');
+    }
+    
+    const script = await res.json();
+    currentDeleteScript = script;
+    currentDeleteId = id;
+    
+    // Get build directory files
+    const filesRes = await fetch(`/api/scripts/${id}/files`);
+    let files = [];
+    if (filesRes.ok) {
+      const filesData = await filesRes.json();
+      files = filesData.files || [];
+    }
+    
+    // Extract build ID from installer path
+    const installerPath = script.installer_path;
+    const pathParts = installerPath.split('/');
+    const buildId = pathParts.length >= 3 ? pathParts[2] : 'Unknown';
+    
+    // Update modal content
+    document.getElementById('deleteScriptTitle').textContent = script.title;
+    document.getElementById('deleteBuildId').textContent = buildId;
+    
+    // Update file list
+    const fileListContainer = document.getElementById('deleteFileList');
+    if (files.length > 0) {
+      fileListContainer.innerHTML = files.map(file => `
+        <div class="file-item">
+          <span class="file-name">${file.name}</span>
+          <span class="file-size">${formatFileSize(file.size)}</span>
+        </div>
+      `).join('');
+    } else {
+      fileListContainer.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No files found in build directory</p>';
+    }
+    
+    // Show modal
+    document.getElementById('deleteModal').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error showing delete modal:', error);
+    alert('Failed to load script details: ' + error.message);
+  }
+}
+
+// Close delete modal
+function closeDeleteModal() {
+  document.getElementById('deleteModal').style.display = 'none';
+  currentDeleteId = null;
+  currentDeleteScript = null;
+}
+
+// Confirm delete action
+async function confirmDelete() {
+  if (!currentDeleteId) return;
+  
+  try {
+    const res = await fetch(`/api/scripts/${currentDeleteId}`, { 
+      method: 'DELETE' 
+    });
+    
+    if (res.ok) {
+      // Close modal
+      closeDeleteModal();
+      
+      // Remove the row from the table
+      const tableRows = document.querySelectorAll('#scriptList table tbody tr');
+      let rowToRemove = null;
+      
+      console.log(`Looking for row with script ID: ${currentDeleteId}`);
+      console.log(`Found ${tableRows.length} table rows`);
+      
+      // Find the row that contains the delete button for this script
+      for (let i = 0; i < tableRows.length; i++) {
+        const row = tableRows[i];
+        const deleteBtn = row.querySelector(`button[onclick*="showDeleteModal(${currentDeleteId})"]`);
+        if (deleteBtn) {
+          rowToRemove = row;
+          console.log(`Found row to remove at index ${i}`);
+          break;
+        }
+      }
+      
+      if (rowToRemove) {
+        rowToRemove.remove();
+        console.log('Row removed successfully');
+      } else {
+        console.warn('Could not find row to remove - will rely on reloadScriptList');
+      }
+      
+      // Remove the details div
+      const detailsDiv = document.getElementById(`details-${currentDeleteId}`);
+      if (detailsDiv) {
+        detailsDiv.remove();
+      }
+      
+      // Reload the script list to refresh the numbering
+      try {
+        await loadScriptList();
+        console.log('Script list reloaded successfully');
+      } catch (error) {
+        console.warn('Could not reload script list:', error);
+        // Continue anyway - the main deletion was successful
+      }
+      
+      // Show success message
+      const result = document.getElementById("result");
+      if (result) {
+        result.innerHTML = '<div class="result-message result-success">✅ Script deleted successfully!</div>';
+        setTimeout(() => {
+          result.innerHTML = '';
+        }, 3000);
+      }
+      
+      // Also show a console message for debugging
+      console.log(`✅ Script ${currentDeleteId} deleted successfully`);
+      
+    } else {
+      const error = await res.json();
+      alert(`Failed to delete script: ${error.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    alert(`Failed to delete script: ${error.message}`);
+  }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('deleteModal');
+  if (event.target === modal) {
+    closeDeleteModal();
+  }
 }
 
 // Initialize the application
