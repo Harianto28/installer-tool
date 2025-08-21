@@ -179,6 +179,11 @@ app.post("/upload", handleUpload, (req, res) => {
     // Normalize line endings for validation
     const normalizedScript = script.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
+    console.log('=== SCRIPT VALIDATION ===');
+    console.log('Script contains OutFile:', normalizedScript.includes("OutFile"));
+    console.log('Script contains File directive:', /File\s+"[^"]+"/.test(normalizedScript));
+    console.log('Script preview (first 500 chars):', normalizedScript.substring(0, 500));
+    
     if (!normalizedScript.includes("OutFile") || !/File\s+"[^"]+"/.test(normalizedScript)) {
       return res.status(400).json({
         success: false,
@@ -252,6 +257,223 @@ app.post("/upload", handleUpload, (req, res) => {
     return res.status(500).json({
       success: false,
       error: "Upload failed: " + error.message,
+    });
+  }
+});
+
+// New endpoint for editing scripts - reuse existing files from a previous build
+app.post("/edit-script", (req, res) => {
+  console.log('=== EDIT SCRIPT REQUEST RECEIVED ===');
+  console.log('Body received:', req.body ? Object.keys(req.body) : 'No body');
+  console.log('Full request body:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { script, title, sourceScriptId } = req.body;
+    
+    console.log('=== PARSED DATA ===');
+    console.log('Script:', script ? `Length: ${script.length}` : 'undefined');
+    console.log('Title:', title);
+    console.log('Source Script ID:', sourceScriptId, 'Type:', typeof sourceScriptId);
+    
+    if (!script) {
+      console.log('❌ Script is missing');
+      return res.status(400).json({
+        success: false,
+        error: "Script is required.",
+      });
+    }
+    
+    if (!sourceScriptId) {
+      console.log('❌ Source script ID is missing');
+      return res.status(400).json({
+        success: false,
+        error: "Source script ID is required to copy files.",
+      });
+    }
+    
+    // Normalize line endings for validation
+    const normalizedScript = script.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    console.log('=== SCRIPT VALIDATION ===');
+    console.log('Script contains OutFile:', normalizedScript.includes("OutFile"));
+    console.log('Script contains File directive:', /File\s+"[^"]+"/.test(normalizedScript));
+    
+    if (!normalizedScript.includes("OutFile") || !/File\s+"[^"]+"/.test(normalizedScript)) {
+      console.log('❌ Script validation failed');
+      return res.status(400).json({
+        success: false,
+        error: "Script NSIS wajib mengandung OutFile dan File.",
+      });
+    }
+
+    console.log('✅ Script validation passed, proceeding with database query...');
+
+    // Get the source script to find its build directory
+    db.query("SELECT installer_path FROM scripts WHERE id = ?", [sourceScriptId], (err, rows) => {
+      if (err) {
+        console.error("❌ Database error:", err);
+        return res.status(500).json({
+          success: false,
+          error: "Database error: " + err.message,
+        });
+      }
+      
+      console.log('Database query result:', rows);
+      
+      if (rows.length === 0) {
+        console.log('❌ Source script not found in database');
+        return res.status(404).json({
+          success: false,
+          error: "Source script not found.",
+        });
+      }
+      
+      const sourceScript = rows[0];
+      const installerPath = sourceScript.installer_path;
+      
+      console.log('Source script installer path:', installerPath);
+      
+      // Extract the build directory from installer path
+      // Path format: /download/1755700480982/test_installer.exe
+      const pathParts = installerPath.split('/');
+      if (pathParts.length < 3) {
+        console.log('❌ Invalid installer path format:', installerPath);
+        return res.status(400).json({ 
+          success: false, 
+          error: "Invalid installer path format" 
+        });
+      }
+      
+      const buildDir = pathParts[2]; // 1755700480982
+      const sourceBuildPath = path.join(__dirname, 'builds', buildDir);
+      
+      console.log('Build directory:', buildDir);
+      console.log('Source build path:', sourceBuildPath);
+      
+      // Check if source build directory exists
+      if (!fs.existsSync(sourceBuildPath)) {
+        console.log('❌ Source build directory not found:', sourceBuildPath);
+        return res.status(404).json({ 
+          success: false, 
+          error: "Source build directory not found" 
+        });
+      }
+      
+      console.log('✅ Source build directory found, creating new build directory...');
+      
+      // Create new build directory
+      const newFolder = path.join("builds", Date.now().toString());
+      fs.mkdirSync(newFolder, { recursive: true });
+      
+      console.log('New build directory created:', newFolder);
+      
+      // Copy all source files (excluding build artifacts)
+      const sourceFiles = fs.readdirSync(sourceBuildPath);
+      let totalSize = 0;
+      let fileCount = 0;
+      
+      console.log('Source files found:', sourceFiles);
+      
+      sourceFiles.forEach(fileName => {
+        // Skip build artifacts
+        if (fileName.toLowerCase().endsWith('.exe') || fileName.toLowerCase().endsWith('.nsi')) {
+          console.log(`⏭️ Skipping build artifact: ${fileName}`);
+          return;
+        }
+        
+        const sourcePath = path.join(sourceBuildPath, fileName);
+        const destPath = path.join(newFolder, fileName);
+        
+        try {
+          fs.copyFileSync(sourcePath, destPath);
+          const stats = fs.statSync(sourcePath);
+          totalSize += stats.size;
+          fileCount++;
+          console.log(`✅ Copied source file: ${fileName} (${stats.size} bytes)`);
+        } catch (error) {
+          console.error(`❌ Failed to copy ${fileName}:`, error);
+        }
+      });
+      
+      if (fileCount === 0) {
+        console.log('❌ No source files found to copy');
+        return res.status(400).json({
+          success: false,
+          error: "No source files found to copy.",
+        });
+      }
+      
+      console.log(`✅ Copied ${fileCount} files, total size: ${totalSize} bytes`);
+      
+      // Write the new script
+      const outFileMatch = normalizedScript.match(/OutFile\s+"([^"]+)"/i);
+      const outFileName = outFileMatch ? outFileMatch[1] : "output.exe";
+      const nsiFileName = "installer.nsi";
+      const nsiPath = path.join(newFolder, nsiFileName);
+      
+      console.log('Writing NSIS script:', nsiPath);
+      fs.writeFileSync(nsiPath, normalizedScript, 'utf8');
+      
+      console.log('✅ NSIS script written, compiling...');
+      
+      // Compile with NSIS
+      exec(
+        `makensis -DPLUGINSDIR="/usr/share/nsis/Plugins" "${nsiFileName}"`,
+        { cwd: newFolder },
+        (err, stdout, stderr) => {
+          if (err) {
+            console.error("❌ Build error:", err, stderr);
+            return res.status(500).json({
+              success: false,
+              error: "Build failed: " + stderr,
+            });
+          }
+
+          console.log('✅ NSIS compilation successful');
+          console.log('NSIS stdout:', stdout);
+          console.log('NSIS stderr:', stderr);
+
+          // Save to DB
+          const downloadPath = `/download/${path.basename(newFolder)}/${outFileName}`;
+          const finalTitle = title || outFileName;
+          
+          console.log('Saving to database...');
+          console.log('Download path:', downloadPath);
+          console.log('Final title:', finalTitle);
+          
+          db.query(
+            "INSERT INTO scripts (title, content, installer_path, total_size, file_count) VALUES (?, ?, ?, ?, ?)",
+            [finalTitle, script, downloadPath, totalSize, fileCount],
+            function (err, result) {
+              if (err) {
+                console.error("❌ Database error:", err);
+                return res.status(500).json({
+                  success: false,
+                  error: "Database error: " + err.message,
+                });
+              }
+
+              console.log('✅ Database insert successful, ID:', result.insertId);
+              
+              return res.json({
+                success: true,
+                downloadUrl: downloadPath,
+                id: result.insertId,
+                totalSize: totalSize,
+                fileCount: fileCount
+              });
+            }
+          );
+        }
+      );
+    });
+    
+  } catch (error) {
+    console.error("❌ Edit script error:", error);
+    console.error("Error stack:", error.stack);
+    return res.status(500).json({
+      success: false,
+      error: "Edit script failed: " + error.message,
     });
   }
 });
@@ -341,76 +563,26 @@ app.get("/api/scripts/:id/files", (req, res) => {
 
 // API: Get all registered routes (for debugging)
 app.get("/api/routes", (req, res) => {
-  const routes = [];
-  
-  // Method 1: Try to access the router stack
-  if (app._router && app._router.stack) {
-    app._router.stack
-      .filter(layer => layer.route)
-      .forEach(layer => {
-        const methods = Object.keys(layer.route.methods)
-          .map(m => m.toUpperCase());
-        routes.push({
-          path: layer.route.path,
-          methods: methods
-        });
-      });
-  }
-  
-  // Method 2: Try to access the app stack directly
-  if (app.stack) {
-    app.stack
-      .filter(layer => layer.route)
-      .forEach(layer => {
-        const methods = Object.keys(layer.route.methods)
-          .map(m => m.toUpperCase());
-        routes.push({
-          path: layer.route.path,
-          methods: methods
-        });
-      });
-  }
-  
-  // Method 3: Try to access the router through different paths
-  if (app._router && app._router.stack) {
-    app._router.stack.forEach(layer => {
-      if (layer.name === 'router' && layer.handle && layer.handle.stack) {
-        layer.handle.stack
-          .filter(route => route.route)
-          .forEach(route => {
-            const methods = Object.keys(route.route.methods)
-              .map(m => m.toUpperCase());
-            routes.push({
-              path: layer.regexp ? layer.regexp.toString() : 'unknown',
-              methods: methods
-            });
-          });
-      }
-    });
-  }
-  
-  // Method 4: Manual route listing as fallback
-  if (routes.length === 0) {
-    routes.push(
-      { path: '/upload', methods: ['POST'] },
-      { path: '/api/scripts', methods: ['GET'] },
-      { path: '/api/routes', methods: ['GET'] },
-      { path: '/download/*', methods: ['GET'] },
-      { path: '/public/*', methods: ['GET'] },
-      { path: '/*', methods: ['GET'] }
-    );
-  }
-  
-  // Remove duplicates
-  const uniqueRoutes = routes.filter((route, index, self) => 
-    index === self.findIndex(r => r.path === route.path)
-  );
+  // Since Express.js doesn't expose routes in a reliable way,
+  // we'll manually list all the routes we've defined
+  const routes = [
+    { path: '/upload', methods: ['POST'], description: 'Upload files and generate installer' },
+    { path: '/edit-script', methods: ['POST'], description: 'Edit script and reuse existing files from previous build' },
+    { path: '/api/scripts', methods: ['GET'], description: 'List all scripts' },
+    { path: '/api/scripts/:id', methods: ['GET'], description: 'Get script by ID' },
+    { path: '/api/scripts/:id/files', methods: ['GET'], description: 'Get files for a specific script' },
+    { path: '/api/routes', methods: ['GET'], description: 'List all registered routes' },
+    { path: '/download/*', methods: ['GET'], description: 'Static file serving for builds' },
+    { path: '/public/*', methods: ['GET'], description: 'Static file serving for public assets' },
+    { path: '/*', methods: ['GET'], description: 'Catch-all route for undefined routes' }
+  ];
   
   res.json({
     success: true,
-    routes: uniqueRoutes,
-    total: uniqueRoutes.length,
-    detectionMethod: routes.length === 0 ? 'manual' : 'automatic'
+    routes: routes,
+    total: routes.length,
+    detectionMethod: 'manual',
+    note: 'Express.js routes are manually listed since automatic detection is unreliable'
   });
 });
 
@@ -435,46 +607,24 @@ app.use((req, res) => {
 const logRoutes = () => {
   console.log("=== Registered Routes ===");
   
-  // Try multiple methods to detect routes
-  let routesFound = false;
+  const routes = [
+    { path: '/upload', methods: ['POST'], description: 'Upload files and generate installer' },
+    { path: '/edit-script', methods: ['POST'], description: 'Edit script and reuse existing files from previous build' },
+    { path: '/api/scripts', methods: ['GET'], description: 'List all scripts' },
+    { path: '/api/scripts/:id', methods: ['GET'], description: 'Get script by ID' },
+    { path: '/api/scripts/:id/files', methods: ['GET'], description: 'Get files for a specific script' },
+    { path: '/api/routes', methods: ['GET'], description: 'List all registered routes' },
+    { path: '/download/*', methods: ['GET'], description: 'Static file serving for builds' },
+    { path: '/public/*', methods: ['GET'], description: 'Static file serving for public assets' },
+    { path: '/*', methods: ['GET'], description: 'Catch-all route for undefined routes' }
+  ];
   
-  // Method 1: Try to access the router stack
-  if (app._router && app._router.stack) {
-    const routes = app._router.stack
-      .filter(layer => layer.route)
-      .map(layer => {
-        const methods = Object.keys(layer.route.methods)
-          .map(m => m.toUpperCase())
-          .join(", ");
-        return `${methods} ${layer.route.path}`;
-      });
-    
-    if (routes.length > 0) {
-      routes.forEach(route => console.log(route));
-      routesFound = true;
-    }
-  }
+  routes.forEach(route => {
+    const methods = route.methods.join(", ");
+    console.log(`${methods} ${route.path} - ${route.description}`);
+  });
   
-  // Method 2: Try to access the app stack directly
-  if (!routesFound && app.stack) {
-    const routes = app.stack
-      .filter(layer => layer.route)
-      .map(layer => {
-        const methods = Object.keys(layer.route.methods)
-          .map(m => m.toUpperCase())
-          .join(", ");
-        return `${methods} ${layer.route.path}`;
-      });
-    
-    if (routes.length > 0) {
-      routes.forEach(route => console.log(route));
-      routesFound = true;
-    }
-  }
-  
-  if (!routesFound) {
-    console.log("⚠️ No routes detected - Express routes may not be fully registered yet");
-  }
+  console.log(`Total: ${routes.length} routes`);
 };
 
 app.listen(port, '0.0.0.0', () => {

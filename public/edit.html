@@ -17,10 +17,10 @@
   </head>
   <body class="edit-page">
     <div class="container">
-      <div class="header">
-        <h1>✏️ Edit Script</h1>
-        <p>Edit your NSIS installer script</p>
-      </div>
+              <div class="header">
+          <h1>✏️ Edit & Clone Script</h1>
+          <p>Modify the script and create a new installer with the same files</p>
+        </div>
 
       <div class="content">
         <div class="back-link">
@@ -32,21 +32,39 @@
         </div>
 
         <div id="edit-form" style="display: none;">
-          <form id="form">
-            <div class="form-group">
-              <label for="title">Installer Title</label>
-              <input type="text" id="title" class="form-control" required>
-            </div>
+                      <form id="form">
+              <div class="form-group">
+                <label for="title">Installer Title</label>
+                <input type="text" id="title" class="form-control" required>
+              </div>
 
-            <div class="script-preview">
-              <h3>📜 NSIS Script</h3>
-              <p class="script-note">💡 Edit your script here!</p>
-              <textarea id="script" class="form-control"></textarea>
-            </div>
+              <div class="form-group">
+                <label for="version">Version</label>
+                <input type="text" id="version" class="form-control" value="v1.0.0" required>
+              </div>
+
+              <div class="form-group">
+                <label for="installDir">Install Directory</label>
+                <input type="text" id="installDir" class="form-control" value="C:\MyApp" required>
+              </div>
+
+              <div class="script-preview">
+                <h3>📜 Generated NSIS Script Preview</h3>
+                <p class="script-note">💡 This script updates automatically when you change the fields above! You can also edit it manually if needed.</p>
+                <textarea id="script" class="form-control"></textarea>
+              </div>
+
+              <div class="sections-container">
+                <h3>📦 Installer Sections</h3>
+                <div id="sections-list"></div>
+                <button type="button" id="add-section-btn" class="btn-secondary">
+                  ➕ Add New Section
+                </button>
+              </div>
 
             <div class="form-actions">
               <button type="submit" class="generate-btn">
-                💾 Update Script
+                🚀 Create New Installer
               </button>
               <button type="button" id="delete-btn" class="btn-danger">
                 🗑️ Delete Script
@@ -56,11 +74,6 @@
         </div>
 
         <div id="result"></div>
-
-        <div id="builds-section" style="display: none;">
-          <h3>📦 Build Files</h3>
-          <div id="builds-list"></div>
-        </div>
       </div>
     </div>
     <script src="edit.js"></script>
