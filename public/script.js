@@ -502,17 +502,6 @@ async function loadScriptList() {
                <td>${createdDate}</td>
              `;
       tbody.appendChild(row);
-
-      // Add details div after the table
-      const detailsDiv = document.createElement("div");
-      detailsDiv.id = `details-${s.id}`;
-      detailsDiv.className = "script-details";
-      detailsDiv.innerHTML = `
-              <button class="script-details-close" onclick="closeScriptDetails(${s.id})" title="Close">×</button>
-              <h4>Script Details: ${s.title}</h4>
-              <pre style="white-space: pre-wrap; background: white; padding: 10px; border-radius: 3px;">${s.content}</pre>
-            `;
-      container.appendChild(detailsDiv);
     });
 
     container.appendChild(table);
@@ -522,23 +511,65 @@ async function loadScriptList() {
   }
 }
 
-function showScriptDetails(id) {
-  const detailsDiv = document.getElementById(`details-${id}`);
-  if (detailsDiv) {
-    // Hide all details first
-    document.querySelectorAll(".script-details").forEach((div) => {
-      div.classList.remove("show");
-    });
-    // Show the clicked details
-    detailsDiv.classList.add("show");
+// Show script details modal
+async function showScriptDetails(id) {
+  try {
+    // Get script details
+    const res = await fetch(`/api/scripts/${id}`);
+    if (!res.ok) {
+      throw new Error('Failed to fetch script details');
+    }
+    
+    const script = await res.json();
+    
+    // Get files for this script
+    const filesRes = await fetch(`/api/scripts/${id}/files`);
+    let files = [];
+    if (filesRes.ok) {
+      const filesData = await filesRes.json();
+      files = filesData.files || [];
+    }
+    
+    // Update modal content
+    document.getElementById('scriptModalTitle').textContent = `📜 Script Details: ${script.title}`;
+    document.getElementById('scriptModalContent').textContent = script.content;
+    
+    // Update files list
+    const filesContainer = document.getElementById('scriptModalFiles');
+    if (files.length > 0) {
+      filesContainer.innerHTML = files.map(file => `
+        <div class="file-item-modal">
+          <div class="file-info-modal">
+            <div class="file-name-modal">
+              <span class="file-type-icon">${file.isDirectory ? '📁' : '📄'}</span>
+              ${file.name}
+            </div>
+            <div class="file-details-modal">
+              <span class="file-size-modal">${formatFileSize(file.size)}</span>
+              <span class="file-date-modal"> • Modified: ${new Date(file.modified).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <div class="file-actions">
+            <a href="${file.path}" target="_blank" class="btn-small" title="Download">⬇️</a>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      filesContainer.innerHTML = '<div class="no-files">No files found in build directory</div>';
+    }
+    
+    // Show modal
+    document.getElementById('scriptDetailsModal').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Failed to fetch script details:', error);
+    alert('Failed to load script details. Please try again.');
   }
 }
 
-function closeScriptDetails(id) {
-  const detailsDiv = document.getElementById(`details-${id}`);
-  if (detailsDiv) {
-    detailsDiv.classList.remove("show");
-  }
+// Close script details modal
+function closeScriptDetailsModal() {
+  document.getElementById('scriptDetailsModal').style.display = 'none';
 }
 
 // Edit script function
@@ -686,11 +717,25 @@ async function confirmDelete() {
 
 // Close modal when clicking outside
 window.onclick = function(event) {
-  const modal = document.getElementById('deleteModal');
-  if (event.target === modal) {
+  const deleteModal = document.getElementById('deleteModal');
+  const scriptDetailsModal = document.getElementById('scriptDetailsModal');
+  
+  if (event.target === deleteModal) {
     closeDeleteModal();
   }
+  
+  if (event.target === scriptDetailsModal) {
+    closeScriptDetailsModal();
+  }
 }
+
+// Close modal when pressing ESC key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeDeleteModal();
+    closeScriptDetailsModal();
+  }
+});
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {

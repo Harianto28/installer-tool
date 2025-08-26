@@ -2,15 +2,6 @@
 
 A professional web-based tool for creating Windows installers with multiple sections, nested folder support, and automatic NSIS script generation.
 
-## 🎯 **NEW: Zero Setup Required!**
-
-**NSIS unzip plugins are now bundled with this project!** No more manual plugin installation or system-wide setup.
-
-- ✅ **Plugins included**: `nsisunz.dll` and `nsisunz.nsh` are bundled
-- ✅ **Cross-platform**: Works on Windows, Linux, and macOS
-- ✅ **Easy setup**: Just `npm install` and run!
-- ✅ **No system paths**: Uses relative paths from project directory
-
 ## ✨ Features
 
 - **Multi-Section Support**: Create installers with multiple installation sections
@@ -21,12 +12,186 @@ A professional web-based tool for creating Windows installers with multiple sect
 - **Manual Editing**: Modify the generated script if needed
 - **Large File Support**: Handle files up to 1GB each
 - **Database Tracking**: Track installer history with file counts and sizes
+- **Bundled NSIS Plugins**: NSIS unzip plugins included - no manual setup required!
 
-## 🗂️ How It Works
+## 🚀 Quick Start Guide
 
-### **Mixed Content Example**
-You can have both ZIP files AND individual files in the same section:
+### **Step 1: Install Dependencies**
 
+```bash
+# Clone or download this project
+git clone <your-repo-url>
+cd installer-tool
+
+# Install Node.js dependencies
+npm install
+```
+
+**What gets installed:**
+- ✅ Express.js web server
+- ✅ Multer file upload handling
+- ✅ MySQL2 database driver
+- ✅ SQLite3 fallback support
+
+### **Step 2: Install NSIS (makensis)**
+
+#### **Windows:**
+1. Download NSIS from [https://nsis.sourceforge.io/Download](https://nsis.sourceforge.io/Download)
+2. Run the installer and follow the setup wizard
+3. **Important**: Add NSIS to your system PATH during installation
+4. Verify installation: Open Command Prompt and run `makensis /VERSION`
+
+#### **Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install nsis
+```
+
+#### **Linux (CentOS/RHEL/Fedora):**
+```bash
+# CentOS/RHEL 7/8
+sudo yum install nsis
+
+# CentOS/RHEL 9, Fedora
+sudo dnf install nsis
+```
+
+#### **macOS:**
+```bash
+# Using Homebrew
+brew install nsis
+
+# Using MacPorts
+sudo port install nsis
+```
+
+#### **Verify NSIS Installation:**
+```bash
+makensis /VERSION
+# Should output something like: "NSIS 3.x.x"
+```
+
+### **Step 3: Configure Database**
+
+#### **Option A: MySQL (Recommended)**
+1. Install MySQL server
+2. Create database: `CREATE DATABASE installer_tool;`
+3. Edit `server.js` with your MySQL credentials:
+
+```javascript
+const db = mysql.createPool({
+  host: "localhost",
+  user: "your_username",
+  password: "your_password",
+  database: "installer_tool",
+});
+```
+
+#### **Option B: SQLite (No Setup Required)**
+- SQLite is included as a fallback
+- No configuration needed - works out of the box
+
+### **Step 4: Start the Application**
+
+```bash
+# Start the web server
+npm start
+
+# Or run directly
+node server.js
+```
+
+**The application will:**
+- ✅ Create necessary directories (`uploads/`, `builds/`)
+- ✅ Connect to database
+- ✅ Start web server on port 3000
+- ✅ Display setup status in console
+
+### **Step 5: Access the Web Interface**
+
+Open your browser and navigate to:
+```
+http://localhost:3000
+```
+
+## 🔧 What's Included
+
+### **NSIS Plugins (No Setup Required!)**
+- ✅ **`nsisunz.dll`** - NSIS unzip plugin for handling ZIP files
+- ✅ **`nsisunz.nsh`** - NSIS include file with unzip functions
+- ✅ **Location**: `./nsis-plugins/Plugins/` and `./nsis-plugins/Include/`
+
+### **Project Structure**
+```
+installer-tool/
+├── server.js              # Main server file
+├── package.json           # Node.js dependencies
+├── nsis-plugins/         # Bundled NSIS plugins
+│   ├── Plugins/
+│   │   └── nsisunz.dll
+│   └── Include/
+│       └── nsisunz.nsh
+├── uploads/               # File upload directory
+├── builds/                # Generated installer directory
+└── public/                # Web interface files
+```
+
+## 📋 Prerequisites Checklist
+
+Before running the application, ensure you have:
+
+- ✅ **Node.js** (v14 or higher)
+- ✅ **npm** (comes with Node.js)
+- ✅ **NSIS** (makensis command available)
+- ✅ **MySQL** (optional, SQLite fallback included)
+- ✅ **Git** (for cloning the repository)
+
+## 🐛 Troubleshooting
+
+### **"makensis command not found"**
+- **Windows**: Add NSIS to system PATH or restart Command Prompt
+- **Linux/macOS**: Verify NSIS installation with `which makensis`
+
+### **Database Connection Failed**
+- Check MySQL credentials in `server.js`
+- Ensure MySQL service is running
+- SQLite fallback will work automatically
+
+### **Port 3000 Already in Use**
+```bash
+# Use a different port
+PORT=3001 npm start
+```
+
+### **Permission Denied (Linux/macOS)**
+```bash
+# Fix uploads/builds directory permissions
+sudo chown -R $USER:$USER uploads/ builds/
+chmod 755 uploads/ builds/
+```
+
+## 🎯 Usage Examples
+
+### **Create a Multi-Section Installer**
+
+1. **Add Section 1: Main Application**
+   - Upload `main.exe` (individual file)
+   - Upload `tools.zip` (ZIP with nested structure)
+
+2. **Add Section 2: Documentation**
+   - Upload `manual.pdf` (individual file)
+   - Upload `examples.zip` (ZIP with examples)
+
+3. **Generate NSIS Script**
+   - Click "Generate NSIS Script"
+   - Review the auto-generated script
+   - Modify if needed
+
+4. **Build Installer**
+   - Click "Build Installer"
+   - Download the generated `.exe` file
+
+### **Mixed Content Support**
 ```
 Section 1: Main Application
 ├── main.exe (individual file)
@@ -40,124 +205,30 @@ Section 1: Main Application
     └── manual.pdf
 ```
 
-### **Generated NSIS Script**
-```nsis
-Section "Main Application" SEC01
-  SetOutPath "$INSTDIR"
-  SetOverwrite on
-  File "main.exe"
-  File "config.ini"
-  
-  ; Handle tools.zip
-  SetOutPath "$INSTDIR"
-  SetOverwrite on
-  File "tools.zip"
-  SetOutPath "$INSTDIR\tools"
-  SetOverwrite on
-  nsisunz::UnzipToLog "$INSTDIR\tools.zip" "$INSTDIR\tools"
-  Pop $0
-  ${If} $0 != "OK"
-    DetailPrint "Failed to unzip tools.zip: $0"
-  ${Else}
-    DetailPrint "Successfully unzipped tools.zip to $INSTDIR\tools"
-  ${EndIf}
-  Delete "$INSTDIR\tools.zip"
-  
-  ; Handle docs.zip
-  SetOutPath "$INSTDIR"
-  SetOverwrite on
-  File "docs.zip"
-  SetOutPath "$INSTDIR\docs"
-  SetOverwrite on
-  nsisunz::UnzipToLog "$INSTDIR\docs.zip" "$INSTDIR\docs"
-  Pop $0
-  ${If} $0 != "OK"
-    DetailPrint "Failed to unzip docs.zip: $0"
-  ${Else}
-    DetailPrint "Successfully unzipped docs.zip to $INSTDIR\docs"
-  ${EndIf}
-  Delete "$INSTDIR\docs.zip"
-SectionEnd
-```
+## 🚀 Advanced Configuration
 
-## 🎯 Usage
-
-### **1. Add ZIP Files (with nested structure)**
-- Click "📦 Select ZIP File (with nested files)"
-- Choose any ZIP file containing folders and files
-- ZIP structure is automatically preserved and unzipped during installation
-
-### **2. Add Individual Files**
-- Click "📄 Add Individual Files"
-- Select multiple individual files
-- Files are placed in the section's root directory
-
-### **3. Mix Both Types**
-- You can have ZIP files AND individual files in the same section
-- The system automatically organizes them correctly
-- NSIS script is generated with proper unzip commands
-
-## 🚀 Quick Setup Guide
-
-### **Prerequisites**
-1. **Node.js** (v14 or higher)
-2. **NSIS** (Nullsoft Scriptable Install System)
-
-### **Installation Steps**
-1. **Clone/download** this project
-2. **Install dependencies**: `npm install`
-3. **Install NSIS**:
-   - **Windows**: Download from [https://nsis.sourceforge.io/Download](https://nsis.sourceforge.io/Download)
-   - **Linux**: `sudo apt-get install nsis`
-   - **macOS**: `brew install nsis`
-4. **Start**: `npm start`
-5. **Open**: `http://localhost:3000`
-
-### **What's Included**
-- ✅ **NSIS unzip plugin** (`nsisunz.dll`) - bundled in `nsis-plugins/Plugins/`
-- ✅ **NSIS include file** (`nsisunz.nsh`) - bundled in `nsis-plugins/Include/`
-- ✅ **No manual setup** required - plugins work automatically!
-
-## 🏗️ Technical Details
-
-### **File Handling**
-- **Folder Uploads**: Preserves complete directory structure
-- **Individual Files**: Placed in section's root directory
-- **Mixed Content**: Automatically organized by type
-- **Path Preservation**: Maintains relative paths for NSIS generation
-
-### **NSIS Script Generation**
-- **Smart Grouping**: Files grouped by directory level
-- **Proper SetOutPath**: One path per directory level
-- **No Duplicates**: Eliminates redundant path commands
-- **Windows Compatible**: Uses proper backslash escaping
-
-### **Database & Storage**
-- **MySQL LONGTEXT**: Supports scripts up to 4GB
-- **File Storage**: Files stored on disk, not in database
-- **Size Tracking**: Monitors total file size and count
-- **Performance**: Optimized for large installer projects
-
-## 🔧 Installation
-
-### **Requirements**
-- Node.js 14+
-- MySQL 5.7+
-- NSIS (makensis command available)
-
-### **Setup**
+### **Custom Port**
 ```bash
-# Install dependencies
-npm install
-
-# Configure database
-# Edit server.js with your MySQL credentials
-
-# Start server
-node server.js
+PORT=8080 npm start
 ```
 
-### **Database Schema**
+### **Custom Database Host**
+```bash
+DB_HOST=192.168.1.100 npm start
+```
+
+### **Environment Variables**
+Create a `.env` file:
+```env
+PORT=3000
+DB_HOST=localhost
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=installer_tool
+```
+
+## 📊 Database Schema
+
 ```sql
 CREATE TABLE scripts (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -170,36 +241,44 @@ CREATE TABLE scripts (
 );
 ```
 
-## 📁 File Structure Support
+## 🔒 Security Notes
 
-### **Supported Patterns**
-- ✅ Individual files: `file.exe`
-- ✅ Simple folders: `tools/file.exe`
-- ✅ Nested folders: `tools/subfolder/file.exe`
-- ✅ Mixed content: `main.exe` + `tools/subfolder/file.exe`
+- **File Upload Limits**: 1GB per file, 1000 files max
+- **Database**: Use strong passwords for production
+- **Port**: Change default port 3000 for production use
+- **Firewall**: Configure firewall rules appropriately
 
-### **NSIS Output Structure**
-- Root files go to section's `installPath`
-- Subfolder files get proper `SetOutPath` commands
-- Each directory level gets its own path setting
-- No duplicate or conflicting path commands
+## 📚 Additional Resources
 
-## 🚀 Perfect For
+- **NSIS Documentation**: [https://nsis.sourceforge.io/Docs/](https://nsis.sourceforge.io/Docs/)
+- **NSIS Download**: [https://nsis.sourceforge.io/Download](https://nsis.sourceforge.io/Download)
+- **Node.js**: [https://nodejs.org/](https://nodejs.org/)
+- **MySQL**: [https://dev.mysql.com/downloads/](https://dev.mysql.com/downloads/)
 
-- **Software Distributions**: Main app + tools + documentation
-- **Game Installers**: Game files + mods + assets
-- **Development Tools**: Executables + libraries + configs
-- **Documentation Sets**: Manuals + examples + templates
-- **Multi-Component Apps**: Core + plugins + resources
+## 🆘 Support
 
-## 💡 Tips
+If you encounter issues:
 
-1. **Organize by Section**: Group related files into logical sections
-2. **Use Folders for Organization**: Keep related files in subfolders
-3. **Mix Content Types**: Combine individual files with folder structures
-4. **Preview Script**: Always check the generated NSIS script
-5. **Test Installers**: Verify folder structure is preserved
+1. **Check the console output** for error messages
+2. **Verify NSIS installation**: `makensis /VERSION`
+3. **Check database connection** (if using MySQL)
+4. **Review file permissions** (Linux/macOS)
+5. **Check port availability**: `netstat -an | grep 3000`
+
+## 🎉 Success!
+
+Once everything is working, you'll see:
+```
+✅ Created uploads directory
+✅ Created builds directory
+✅ Database connected successfully
+✅ Scripts table ready
+✅ installer_path column already exists
+✅ NSIS Installer Tool ready! Make sure you have NSIS installed.
+```
+
+**Your professional installer builder is now ready to use! 🚀**
 
 ---
 
-**Your professional installer builder with complete folder structure support! 🎉**
+*Built with ❤️ using Node.js, Express, and NSIS*

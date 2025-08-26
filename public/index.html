@@ -87,6 +87,34 @@
           </div>
         </div>
 
+        <!-- Script Details Modal -->
+        <div id="scriptDetailsModal" class="modal">
+          <div class="modal-content script-details-modal">
+            <div class="modal-header">
+              <h3 id="scriptModalTitle">📜 Script Details</h3>
+              <span class="close" onclick="closeScriptDetailsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+              <div class="script-content-section">
+                <h4>📝 NSIS Script</h4>
+                <div class="script-code-container">
+                  <pre id="scriptModalContent" class="script-code"></pre>
+                </div>
+              </div>
+              
+              <div class="files-section">
+                <h4>📁 Included Files</h4>
+                <div id="scriptModalFiles" class="files-list">
+                  <p>Loading files...</p>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" onclick="closeScriptDetailsModal()">Close</button>
+            </div>
+          </div>
+        </div>
+
         <div class="script-history">
           <h3>📜 Script History</h3>
           <div id="scriptList"></div>

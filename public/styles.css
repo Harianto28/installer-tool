@@ -718,11 +718,11 @@ textarea.form-control {
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-50px);
+    transform: translate(-50%, -50%) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -758,6 +758,26 @@ textarea.form-control {
 
 .modal-body {
   padding: 25px;
+  max-height: calc(90vh - 140px); /* Account for header and footer */
+  overflow-y: auto;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .delete-warning {
@@ -1013,5 +1033,194 @@ textarea.form-control {
   .form-actions .generate-btn,
   .form-actions .btn-danger {
     max-width: 100%;
+  }
+}
+
+/* Script Details Modal Styles */
+.script-details-modal {
+  max-width: 90vw;
+  width: 1200px;
+  max-height: 90vh;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  animation: modalSlideIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+.script-content-section,
+.files-section {
+  margin-bottom: 24px;
+}
+
+.script-content-section h4,
+.files-section h4 {
+  margin: 0 0 16px 0;
+  color: #374151;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.script-code-container {
+  background: #1f2937;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 350px;
+  overflow: hidden;
+  border: 1px solid #374151;
+}
+
+.script-code {
+  color: #e5e7eb;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.script-code::-webkit-scrollbar {
+  width: 8px;
+}
+
+.script-code::-webkit-scrollbar-track {
+  background: #374151;
+  border-radius: 4px;
+}
+
+.script-code::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+.script-code::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.files-list {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.files-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.files-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.files-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.files-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.file-item-modal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.file-item-modal:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.file-item-modal:last-child {
+  margin-bottom: 0;
+}
+
+.file-info-modal {
+  flex: 1;
+}
+
+.file-name-modal {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.file-details-modal {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.file-size-modal {
+  font-weight: 600;
+  color: #8b5cf6;
+}
+
+.file-date-modal {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.file-type-icon {
+  font-size: 1.2rem;
+  margin-right: 8px;
+}
+
+.no-files {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* Make title clickable */
+.script-title {
+  color: #8b5cf6;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.script-title:hover {
+  color: #7c3aed;
+}
+
+/* Responsive modal adjustments */
+@media (max-width: 768px) {
+  .script-details-modal {
+    max-width: 95vw;
+    width: 95vw;
+    margin: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+  .script-code-container {
+    max-height: 250px;
+  }
+  
+  .script-code {
+    max-height: 250px;
+    font-size: 0.75rem;
+  }
+  
+  .files-list {
+    max-height: 200px;
   }
 }

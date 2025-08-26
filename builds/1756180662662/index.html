@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NSIS Installer Generator</title>
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🚀 NSIS Installer Generator</h1>
+        <p>Create professional installers with multiple sections</p>
+      </div>
+
+      <div class="content">
+        <form id="form">
+          <div class="form-group">
+            <label for="title">Installer Title</label>
+            <input
+              type="text"
+              id="title"
+              class="form-control"
+              value="My Installer"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="version">Version</label>
+            <input
+              type="text"
+              id="version"
+              class="form-control"
+              value="v1.0.0"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="installDir">Install Directory</label>
+            <input
+              type="text"
+              id="installDir"
+              class="form-control"
+              value="C:\MyApp"
+              required
+            />
+          </div>
+
+          <div class="script-preview">
+            <h3>📜 Generated NSIS Script Preview</h3>
+            <p class="script-note">
+              💡 You can edit this script manually if needed!
+            </p>
+            <textarea id="script" class="form-control"></textarea>
+          </div>
+
+          <div class="sections-container">
+            <h3>📦 Installer Sections</h3>
+            <div id="sections-list"></div>
+            <button type="button" id="add-section-btn" class="btn-secondary">
+              ➕ Add New Section
+            </button>
+          </div>
+
+          <button type="submit" class="generate-btn">
+            ⚡ Generate Installer
+          </button>
+        </form>
+
+        <div id="result"></div>
+
+        <div class="script-history">
+          <h3>📜 Script History</h3>
+          <div id="scriptList"></div>
+        </div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
