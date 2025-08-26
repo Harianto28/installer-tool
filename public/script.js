@@ -229,7 +229,7 @@ function generateNSISScript() {
  !define PRODUCT_VERSION "${version}"
  !define PRODUCT_DIR "${installDir}"
  
-   OutFile "${title.replace(/[^a-zA-Z0-9]/g, '')}_Installer-${version.replace(/[^0-9]/g, '')}.exe"
+   OutFile "${title.replace(/[^a-zA-Z0-9]/g, '')}_Installer-${version}.exe"
   InstallDir "${installDir}"
  Caption "${title} ${version}"
  ShowInstDetails show
@@ -238,11 +238,11 @@ function generateNSISScript() {
  Page directory ; This adds the page where the user can select the install directory
  Page instfiles ; This page actually performs the installation process
  
-   ; Include NSIS plugins and libraries
-  !addplugindir "/usr/share/nsis/Plugins"
-  !include LogicLib.nsh
-  !include WinCore.nsh
-  !include "/usr/share/nsis/Include/nsisunz.nsh" ; Include the unzip plugin
+      ; Include NSIS plugins and libraries
+   !addplugindir "nsis-plugins/Plugins"
+   !include LogicLib.nsh
+   !include WinCore.nsh
+   !include "nsis-plugins/Include/nsisunz.nsh" ; Include the unzip plugin
   
   ; Function to clean up temporary files (defined before use)
   Function CleanupTempFiles

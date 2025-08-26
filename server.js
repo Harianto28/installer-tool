@@ -199,17 +199,56 @@ app.post("/upload", handleUpload, (req, res) => {
     // Write normalized script
     fs.writeFileSync(nsiPath, normalizedScript, 'utf8');
 
+    // Copy NSIS plugins to build directory for compilation
+    const pluginsSourceDir = path.join(__dirname, 'nsis-plugins');
+    const pluginsDestDir = path.join(folder, 'nsis-plugins');
+    
+    if (fs.existsSync(pluginsSourceDir)) {
+      try {
+        // Copy the entire nsis-plugins directory to the build folder
+        const copyRecursive = (src, dest) => {
+          if (fs.statSync(src).isDirectory()) {
+            if (!fs.existsSync(dest)) {
+              fs.mkdirSync(dest, { recursive: true });
+            }
+            fs.readdirSync(src).forEach(file => {
+              const srcPath = path.join(src, file);
+              const destPath = path.join(dest, file);
+              copyRecursive(srcPath, destPath);
+            });
+          } else {
+            fs.copyFileSync(src, dest);
+          }
+        };
+        
+        copyRecursive(pluginsSourceDir, pluginsDestDir);
+        console.log('✅ NSIS plugins copied to build directory');
+      } catch (error) {
+        console.error('❌ Error copying NSIS plugins:', error.message);
+        return res.status(500).json({
+          success: false,
+          error: "Failed to copy NSIS plugins: " + error.message,
+        });
+      }
+    } else {
+      console.error('❌ NSIS plugins directory not found:', pluginsSourceDir);
+      return res.status(500).json({
+        success: false,
+        error: "NSIS plugins directory not found. Please ensure nsis-plugins/ folder exists.",
+      });
+    }
+
     // NSIS unzip plugin is now properly installed in system directories
     console.log('=== NSIS Plugin Status ===');
-    console.log('✅ nsisunz.dll installed in: /usr/share/nsis/Plugins/amd64-unicode/');
-    console.log('✅ nsisunz.nsh installed in: /usr/share/nsis/Include/');
-    console.log('✅ Symbolic links created in /usr/share/nsis/Plugins/');
-    console.log('No need to copy files - NSIS will find them automatically');
+    console.log('✅ nsisunz.dll available in: ./nsis-plugins/Plugins/');
+    console.log('✅ nsisunz.nsh available in: ./nsis-plugins/Include/');
+    console.log('✅ Using local NSIS plugins - no system installation required');
+    console.log('✅ New users can just npm install and run!');
 
     // Compile with explicit plugin directory
-    exec(
-      `makensis -DPLUGINSDIR="/usr/share/nsis/Plugins" "${nsiFileName}"`,
-      { cwd: folder },
+          exec(
+        `makensis -DPLUGINSDIR="nsis-plugins/Plugins" "${nsiFileName}"`,
+        { cwd: folder },
       (err, stdout, stderr) => {
         if (err) {
           console.error("Build error:", err, stderr);
@@ -434,11 +473,50 @@ app.post("/edit-script", handleUpload, (req, res) => {
       console.log('Writing NSIS script:', nsiPath);
       fs.writeFileSync(nsiPath, normalizedScript, 'utf8');
       
+      // Copy NSIS plugins to build directory for compilation
+      const pluginsSourceDir = path.join(__dirname, 'nsis-plugins');
+      const pluginsDestDir = path.join(newFolder, 'nsis-plugins');
+      
+      if (fs.existsSync(pluginsSourceDir)) {
+        try {
+          // Copy the entire nsis-plugins directory to the build folder
+          const copyRecursive = (src, dest) => {
+            if (fs.statSync(src).isDirectory()) {
+              if (!fs.existsSync(dest)) {
+                fs.mkdirSync(dest, { recursive: true });
+              }
+              fs.readdirSync(src).forEach(file => {
+                const srcPath = path.join(src, file);
+                const destPath = path.join(dest, file);
+                copyRecursive(srcPath, destPath);
+              });
+            } else {
+              fs.copyFileSync(src, dest);
+            }
+          };
+          
+          copyRecursive(pluginsSourceDir, pluginsDestDir);
+          console.log('✅ NSIS plugins copied to build directory');
+        } catch (error) {
+          console.error('❌ Error copying NSIS plugins:', error.message);
+          return res.status(500).json({
+            success: false,
+            error: "Failed to copy NSIS plugins: " + error.message,
+          });
+        }
+      } else {
+        console.error('❌ NSIS plugins directory not found:', pluginsSourceDir);
+        return res.status(500).json({
+          success: false,
+          error: "NSIS plugins directory not found. Please ensure nsis-plugins/ folder exists.",
+        });
+      }
+      
       console.log('✅ NSIS script written, compiling...');
       
       // Compile with NSIS
       exec(
-        `makensis -DPLUGINSDIR="/usr/share/nsis/Plugins" "${nsiFileName}"`,
+        `makensis -DPLUGINSDIR="nsis-plugins/Plugins" "${nsiFileName}"`,
         { cwd: newFolder },
         (err, stdout, stderr) => {
           if (err) {

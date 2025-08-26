@@ -2,6 +2,15 @@
 
 A professional web-based tool for creating Windows installers with multiple sections, nested folder support, and automatic NSIS script generation.
 
+## 🎯 **NEW: Zero Setup Required!**
+
+**NSIS unzip plugins are now bundled with this project!** No more manual plugin installation or system-wide setup.
+
+- ✅ **Plugins included**: `nsisunz.dll` and `nsisunz.nsh` are bundled
+- ✅ **Cross-platform**: Works on Windows, Linux, and macOS
+- ✅ **Easy setup**: Just `npm install` and run!
+- ✅ **No system paths**: Uses relative paths from project directory
+
 ## ✨ Features
 
 - **Multi-Section Support**: Create installers with multiple installation sections
@@ -87,6 +96,27 @@ SectionEnd
 - You can have ZIP files AND individual files in the same section
 - The system automatically organizes them correctly
 - NSIS script is generated with proper unzip commands
+
+## 🚀 Quick Setup Guide
+
+### **Prerequisites**
+1. **Node.js** (v14 or higher)
+2. **NSIS** (Nullsoft Scriptable Install System)
+
+### **Installation Steps**
+1. **Clone/download** this project
+2. **Install dependencies**: `npm install`
+3. **Install NSIS**:
+   - **Windows**: Download from [https://nsis.sourceforge.io/Download](https://nsis.sourceforge.io/Download)
+   - **Linux**: `sudo apt-get install nsis`
+   - **macOS**: `brew install nsis`
+4. **Start**: `npm start`
+5. **Open**: `http://localhost:3000`
+
+### **What's Included**
+- ✅ **NSIS unzip plugin** (`nsisunz.dll`) - bundled in `nsis-plugins/Plugins/`
+- ✅ **NSIS include file** (`nsisunz.nsh`) - bundled in `nsis-plugins/Include/`
+- ✅ **No manual setup** required - plugins work automatically!
 
 ## 🏗️ Technical Details
 

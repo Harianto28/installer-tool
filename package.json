@@ -4,8 +4,11 @@
   "description": "A web-based tool for creating Windows installers using NSIS (Nullsoft Scriptable Install System). This tool provides a simple web interface where users can upload files and provide NSIS scripts to generate executable installers.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "node test-nsis-setup.js",
+    "start": "node server.js",
+    "postinstall": "echo \"✅ NSIS Installer Tool ready! Make sure you have NSIS installed.\" && echo \"📖 For Windows: Download from https://nsis.sourceforge.io/Download\" && echo \"📖 For Linux: sudo apt-get install nsis\" && echo \"📖 For macOS: brew install nsis\"",
+    "setup-nsis": "echo \"🔧 Setting up NSIS environment...\" && echo \"📁 NSIS plugins are bundled with this project in ./nsis-plugins/\" && echo \"✅ No additional setup required - just install NSIS and run npm start!\"",
+    "test-nsis": "node test-nsis-setup.js"
   },
   "keywords": [],
   "author": "",
